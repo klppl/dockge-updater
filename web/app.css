@@ -1,8 +1,8 @@
 /* Hallmark · macrostructure: Workbench · tone: utilitarian technical · anchor hue: electric cobalt
- * Hallmark · pre-emit critique: P5 H4 E4 S5 R5 V4
+ * Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V3
  * genre: modern-minimal · theme: Cobalt · enrichment: none · nav: N9 (sans, outlined, default) · footer: Ft2 (wordmark/meta, middot, spaced)
  * contrast: pass (40–41) · slop: pass (42–45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · mobile: pass (34, 49, 50–57)
- * audience: single VPS operator · use: inspect and apply image updates · tone: utilitarian technical
+ * audience: operator · use: inspect and apply image updates · tone: utilitarian technical
  */
 @import url("/tokens.css");
 
@@ -86,9 +86,11 @@ button { color: inherit; }
 .page-shell { margin: 0 auto; max-width: 92rem; padding: 0 var(--space-md); }
 
 .page-intro {
-  display: grid;
-  gap: var(--space-wide);
-  padding-block: var(--space-section) var(--space-display);
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding-block: var(--space-md);
 }
 
 h1, h2, p { margin-block-start: 0; }
@@ -101,18 +103,14 @@ h1, h2 {
 }
 
 h1 {
-  font-size: var(--text-display);
+  font-size: var(--text-md);
   font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 0.98;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
   margin-block-end: 0;
-  max-width: 12ch;
 }
 
 h2 { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; margin-block-end: 0; }
-
-.intro-copy { align-self: end; max-width: 34rem; }
-.intro-copy p { color: var(--color-ink-soft); font-size: 1rem; margin-block-end: var(--space-lg); max-width: 50ch; }
 
 .button {
   align-items: center;
@@ -143,7 +141,7 @@ h2 { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.025em; line
   input[type="time"]:not(:disabled):hover, select:not(:disabled):hover { background: var(--color-surface-muted); color: var(--color-ink); }
 }
 
-.button:focus-visible, .icon-button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+.button:focus-visible, .icon-button:focus-visible, .service-link:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;
   border-color: var(--color-accent);
@@ -233,8 +231,11 @@ h2 { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.025em; line
 .service-row + .service-row { border-top: 1px solid var(--color-line); }
 .service-name { font-size: 0.8125rem; font-weight: 650; }
 .service-image { color: var(--color-ink-soft); font-family: var(--font-mono); font-size: 0.6875rem; overflow-wrap: anywhere; }
+.service-metadata { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-sm); }
 .service-state { color: var(--color-ink-faint); font-size: 0.6875rem; }
 .service-state.is-update { color: var(--color-warning); font-weight: 700; }
+.service-link { align-items: center; color: var(--color-accent); display: inline-flex; font-size: 0.6875rem; font-weight: 650; min-height: 1.5rem; text-decoration-thickness: 1px; text-underline-offset: 2px; white-space: nowrap; }
+.service-link:active { color: var(--color-accent-hover); }
 
 .loading-block, .empty-state { align-items: center; background: var(--color-surface); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-medium); color: var(--color-ink-soft); display: flex; flex-direction: column; gap: var(--space-sm); min-height: 12rem; justify-content: center; padding: var(--space-wide); text-align: center; }
 .loading-block p, .empty-state p { margin: 0; }
@@ -295,7 +296,6 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
   .topbar { padding-inline: max(var(--space-wide), env(safe-area-inset-left)); }
   .system-state { display: inline-flex; }
   .page-shell { padding-inline: var(--space-wide); }
-  .page-intro { grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr); padding-block: var(--space-display) var(--space-hero-end); }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric:nth-child(2) { border-top: 0; }
   .metric:nth-child(even) { border-inline-start: 1px solid var(--color-line); }

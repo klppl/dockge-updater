@@ -4,6 +4,13 @@
     "macrostructure": "Workbench",
     "theme": "Cobalt",
     "enrichment": "none",
-    "brief": "Single-user Dockge image-update dashboard"
+    "brief": "Compact Dockge update dashboard"
+  },
+  {
+    "date": "2026-09-06",
+    "macrostructure": "Workbench",
+    "theme": "Cobalt",
+    "enrichment": "none",
+    "brief": "Dockge image-update dashboard"
   }
 ]

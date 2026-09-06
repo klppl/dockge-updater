@@ -29,6 +29,19 @@ func main() {
 		logger.Error("startup check failed", "error", err)
 		os.Exit(1)
 	}
+	ghcrUser := os.Getenv("GITHUB_USER")
+	ghcrToken := os.Getenv("GHCR_TOKEN")
+	if ghcrUser != "" || ghcrToken != "" {
+		loginContext, cancelLogin := context.WithTimeout(context.Background(), 30*time.Second)
+		err := docker.Login(loginContext, "ghcr.io", ghcrUser, ghcrToken)
+		cancelLogin()
+		if err != nil {
+			logger.Error("GHCR authentication failed", "error", err)
+			os.Exit(1)
+		}
+		_ = os.Unsetenv("GHCR_TOKEN")
+		logger.Info("authenticated to GHCR")
+	}
 
 	store := app.NewStore(filepath.Join(dataDirectory, "state.json"))
 	manager, err := app.NewManager(stacksDirectory, docker, store, version, logger)

@@ -13,6 +13,7 @@ type fakeRunner struct {
 	responses map[string][]byte
 	errors    map[string]error
 	calls     []string
+	inputs    []string
 }
 
 func (f *fakeRunner) Run(_ context.Context, directory, name string, args ...string) ([]byte, error) {
@@ -26,6 +27,27 @@ func (f *fakeRunner) Run(_ context.Context, directory, name string, args ...stri
 		return nil, fmt.Errorf("unexpected command: %s", key)
 	}
 	return response, nil
+}
+
+func (f *fakeRunner) RunWithInput(ctx context.Context, directory, input, name string, args ...string) ([]byte, error) {
+	f.inputs = append(f.inputs, input)
+	return f.Run(ctx, directory, name, args...)
+}
+
+func TestDockerLoginUsesStandardInput(t *testing.T) {
+	runner := &fakeRunner{responses: map[string][]byte{
+		"docker login ghcr.io --username octocat --password-stdin": []byte("Login Succeeded\n"),
+	}, errors: map[string]error{}}
+
+	if err := NewDocker(runner).Login(context.Background(), "ghcr.io", "octocat", "secret-token"); err != nil {
+		t.Fatal(err)
+	}
+	if len(runner.inputs) != 1 || runner.inputs[0] != "secret-token\n" {
+		t.Fatalf("token was not passed through standard input: %#v", runner.inputs)
+	}
+	if strings.Contains(strings.Join(runner.calls, " "), "secret-token") {
+		t.Fatal("token must not appear in command arguments")
+	}
 }
 
 func TestDiscoverStacks(t *testing.T) {
@@ -78,7 +100,7 @@ func TestCheckStackDetectsUpdatedImage(t *testing.T) {
 	runner.responses["docker compose -f "+composeFile+" pull --quiet web"] = nil
 	runner.responses["docker compose -f "+composeFile+" ps --all --format json"] = []byte(`[{"ID":"container123456789","Service":"web","Image":"nginx:latest","State":"running"}]`)
 	runner.responses["docker inspect --format={{.Image}} container123456789"] = []byte("sha256:old\n")
-	runner.responses["docker image inspect --format={{.Id}} nginx:latest"] = []byte("sha256:new\n")
+	runner.responses["docker image inspect nginx:latest"] = []byte(`[{"Id":"sha256:new","Config":{"Labels":{"org.opencontainers.image.source":"https://github.com/nginx/nginx","org.opencontainers.image.version":"1.29.1","org.opencontainers.image.revision":"abc123"}}}]`)
 
 	checked, err := NewDocker(runner).CheckStack(context.Background(), StackState{
 		ID: "demo", Name: "demo", ComposeFile: composeFile,
@@ -94,5 +116,33 @@ func TestCheckStackDetectsUpdatedImage(t *testing.T) {
 	}
 	if checked.Services[0].ContainerID != "container123" {
 		t.Fatalf("container ID was not shortened: %q", checked.Services[0].ContainerID)
+	}
+	if checked.Services[0].SourceURL != "https://github.com/nginx/nginx" {
+		t.Fatalf("unexpected source URL: %q", checked.Services[0].SourceURL)
+	}
+	if checked.Services[0].ChangelogURL != "https://github.com/nginx/nginx/releases" {
+		t.Fatalf("unexpected changelog URL: %q", checked.Services[0].ChangelogURL)
+	}
+	if checked.Services[0].ImageVersion != "1.29.1" || checked.Services[0].ImageRevision != "abc123" {
+		t.Fatalf("unexpected image metadata: %#v", checked.Services[0])
+	}
+}
+
+func TestImageMetadataFallsBackToGHCRRepository(t *testing.T) {
+	source, changelog, _, _ := imageMetadata("ghcr.io/example/private-app:latest", nil)
+	if source != "https://github.com/example/private-app" {
+		t.Fatalf("unexpected source URL: %q", source)
+	}
+	if changelog != "https://github.com/example/private-app/releases" {
+		t.Fatalf("unexpected changelog URL: %q", changelog)
+	}
+}
+
+func TestImageMetadataRejectsUnsafeSourceURL(t *testing.T) {
+	source, changelog, _, _ := imageMetadata("registry.example.com/app:latest", map[string]string{
+		"org.opencontainers.image.source": "javascript:alert(1)",
+	})
+	if source != "" || changelog != "" {
+		t.Fatalf("unsafe metadata should not produce links: source=%q changelog=%q", source, changelog)
 	}
 }

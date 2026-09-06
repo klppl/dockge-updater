@@ -23,6 +23,10 @@ func DefaultSettings() Settings {
 type ServiceState struct {
 	Name            string `json:"name"`
 	Image           string `json:"image"`
+	SourceURL       string `json:"sourceUrl,omitempty"`
+	ChangelogURL    string `json:"changelogUrl,omitempty"`
+	ImageVersion    string `json:"imageVersion,omitempty"`
+	ImageRevision   string `json:"imageRevision,omitempty"`
 	ContainerID     string `json:"containerId,omitempty"`
 	ContainerState  string `json:"containerState,omitempty"`
 	CurrentImageID  string `json:"currentImageId,omitempty"`

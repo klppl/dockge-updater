@@ -45,6 +45,14 @@ function element(tag, className, text) {
   return node;
 }
 
+function externalLink(label, href) {
+  const link = element('a', 'service-link', label);
+  link.href = href;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  return link;
+}
+
 function shortRelative(value) {
   if (!value || value.startsWith('0001-')) return 'Never';
   const seconds = Math.round((new Date(value).getTime() - Date.now()) / 1000);
@@ -114,7 +122,11 @@ function renderStack(stack) {
       row.append(element('span', 'service-name', service.name));
       row.append(element('span', 'service-image', service.image));
       const state = service.updateAvailable ? 'Update available' : (service.containerState || 'not deployed');
-      row.append(element('span', `service-state${service.updateAvailable ? ' is-update' : ''}`, state));
+      const metadata = element('span', 'service-metadata');
+      metadata.append(element('span', `service-state${service.updateAvailable ? ' is-update' : ''}`, state));
+      if (service.sourceUrl) metadata.append(externalLink('Repository', service.sourceUrl));
+      if (service.changelogUrl) metadata.append(externalLink('Releases', service.changelogUrl));
+      row.append(metadata);
       list.append(row);
     });
   }
@@ -169,7 +181,7 @@ function render(data) {
   ui.metricLastExact.textContent = exactDate(data.lastCheck) || 'No check recorded';
   ui.metricNext.textContent = timeOnly(data.nextCheck);
   ui.metricNextExact.textContent = data.settings.autoUpdatePolicy === 'off' ? 'Updates require approval' : `Auto-update: ${data.settings.autoUpdatePolicy}`;
-  ui.stackSummary.textContent = errors ? `${errors} stack${errors === 1 ? '' : 's'} need attention` : (!hasChecked ? `${stacks.length} stack${stacks.length === 1 ? '' : 's'} ready for first check` : `${updates} pending across ${stacks.length} stacks`);
+  ui.stackSummary.textContent = errors ? `${errors} stack${errors === 1 ? '' : 's'} need attention` : (!hasChecked ? `${stacks.length} stack${stacks.length === 1 ? '' : 's'} ready for first check` : `${updates} pending across ${stacks.length} stack${stacks.length === 1 ? '' : 's'}`);
   ui.activityCount.textContent = String((data.events || []).length);
   ui.footerVersion.textContent = `v${data.version} · single binary · local state`;
 

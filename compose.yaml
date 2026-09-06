@@ -8,9 +8,12 @@ services:
     container_name: dockge-updater
     restart: unless-stopped
     environment:
-      TZ: ${TZ:-Europe/Stockholm}
+      TZ: ${TZ:-UTC}
       STACKS_DIR: ${DOCKGE_STACKS_DIR:-/opt/stacks}
       DATA_DIR: /data
+      DOCKER_CONFIG: /tmp/docker-config
+      GITHUB_USER: ${GITHUB_USER:-}
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
       LISTEN_ADDR: :8080
     ports:
       - "127.0.0.1:${UPDATER_PORT:-8088}:8080"

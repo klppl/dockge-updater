@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,11 +22,26 @@ type CommandRunner interface {
 	Run(ctx context.Context, directory, name string, args ...string) ([]byte, error)
 }
 
+type inputCommandRunner interface {
+	RunWithInput(ctx context.Context, directory, input, name string, args ...string) ([]byte, error)
+}
+
 type ExecRunner struct{}
 
 func (ExecRunner) Run(ctx context.Context, directory, name string, args ...string) ([]byte, error) {
+	return runCommand(ctx, directory, "", name, args...)
+}
+
+func (ExecRunner) RunWithInput(ctx context.Context, directory, input, name string, args ...string) ([]byte, error) {
+	return runCommand(ctx, directory, input, name, args...)
+}
+
+func runCommand(ctx context.Context, directory, input, name string, args ...string) ([]byte, error) {
 	command := exec.CommandContext(ctx, name, args...)
 	command.Dir = directory
+	if input != "" {
+		command.Stdin = strings.NewReader(input)
+	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	command.Stdout = &stdout
@@ -51,6 +67,22 @@ func NewDocker(runner CommandRunner) *Docker {
 func (d *Docker) Validate(ctx context.Context) error {
 	if _, err := d.runner.Run(ctx, ".", "docker", "compose", "version", "--short"); err != nil {
 		return fmt.Errorf("docker compose is unavailable: %w", err)
+	}
+	return nil
+}
+
+func (d *Docker) Login(ctx context.Context, registry, username, token string) error {
+	username = strings.TrimSpace(username)
+	token = strings.TrimSpace(token)
+	if username == "" || token == "" {
+		return errors.New("registry username and token are both required")
+	}
+	runner, ok := d.runner.(inputCommandRunner)
+	if !ok {
+		return errors.New("command runner does not support standard input")
+	}
+	if _, err := runner.RunWithInput(ctx, ".", token+"\n", "docker", "login", registry, "--username", username, "--password-stdin"); err != nil {
+		return fmt.Errorf("login to %s: %w", registry, err)
 	}
 	return nil
 }
@@ -109,6 +141,13 @@ type composeContainer struct {
 	State   string `json:"State"`
 }
 
+type dockerImageInspect struct {
+	ID     string `json:"Id"`
+	Config struct {
+		Labels map[string]string `json:"Labels"`
+	} `json:"Config"`
+}
+
 func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, error) {
 	stack.Status = "checking"
 	stack.Error = ""
@@ -163,11 +202,16 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 				service.CurrentImageID = strings.TrimSpace(string(current))
 			}
 		}
-		target, inspectErr := d.runner.Run(ctx, directory, "docker", "image", "inspect", "--format={{.Id}}", image)
+		target, inspectErr := d.runner.Run(ctx, directory, "docker", "image", "inspect", image)
 		if inspectErr != nil {
 			return stack, fmt.Errorf("inspect image %s: %w", image, inspectErr)
 		}
-		service.TargetImageID = strings.TrimSpace(string(target))
+		inspected, inspectErr := parseImageInspect(target)
+		if inspectErr != nil {
+			return stack, fmt.Errorf("decode image metadata for %s: %w", image, inspectErr)
+		}
+		service.TargetImageID = inspected.ID
+		service.SourceURL, service.ChangelogURL, service.ImageVersion, service.ImageRevision = imageMetadata(image, inspected.Config.Labels)
 		service.UpdateAvailable = service.CurrentImageID != "" && service.TargetImageID != "" && service.CurrentImageID != service.TargetImageID
 		if service.UpdateAvailable {
 			updates++
@@ -183,6 +227,70 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 		stack.Status = "up_to_date"
 	}
 	return stack, nil
+}
+
+func parseImageInspect(output []byte) (dockerImageInspect, error) {
+	var images []dockerImageInspect
+	if err := json.Unmarshal(output, &images); err != nil {
+		return dockerImageInspect{}, err
+	}
+	if len(images) == 0 || strings.TrimSpace(images[0].ID) == "" {
+		return dockerImageInspect{}, errors.New("image inspect returned no image")
+	}
+	return images[0], nil
+}
+
+func imageMetadata(image string, labels map[string]string) (source, changelog, version, revision string) {
+	if labels != nil {
+		source = safeHTTPURL(labels["org.opencontainers.image.source"])
+		if source == "" {
+			source = safeHTTPURL(labels["org.label-schema.vcs-url"])
+		}
+		version = strings.TrimSpace(labels["org.opencontainers.image.version"])
+		revision = strings.TrimSpace(labels["org.opencontainers.image.revision"])
+	}
+	if source == "" {
+		source = ghcrSourceURL(image)
+	}
+	changelog = githubReleasesURL(source)
+	return source, changelog, version, revision
+}
+
+func safeHTTPURL(value string) string {
+	value = strings.TrimSpace(strings.TrimPrefix(value, "git+"))
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return ""
+	}
+	return parsed.String()
+}
+
+func ghcrSourceURL(image string) string {
+	reference := strings.TrimSpace(image)
+	if at := strings.IndexByte(reference, '@'); at >= 0 {
+		reference = reference[:at]
+	}
+	if colon := strings.LastIndexByte(reference, ':'); colon > strings.LastIndexByte(reference, '/') {
+		reference = reference[:colon]
+	}
+	parts := strings.Split(reference, "/")
+	if len(parts) < 3 || !strings.EqualFold(parts[0], "ghcr.io") || parts[1] == "" || parts[2] == "" {
+		return ""
+	}
+	return "https://github.com/" + url.PathEscape(parts[1]) + "/" + url.PathEscape(parts[2])
+}
+
+func githubReleasesURL(source string) string {
+	parsed, err := url.Parse(source)
+	if err != nil || !strings.EqualFold(parsed.Host, "github.com") {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return ""
+	}
+	repository := strings.TrimSuffix(parts[1], ".git")
+	return "https://github.com/" + url.PathEscape(parts[0]) + "/" + url.PathEscape(repository) + "/releases"
 }
 
 func (d *Docker) UpdateStack(ctx context.Context, stack StackState) error {
