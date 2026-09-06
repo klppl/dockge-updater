@@ -1,153 +1,240 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Dockge Updater</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@500;700&amp;family=Space+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="/app.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="Dockge Updater home">
-      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-      <span>Dockge Updater</span>
-    </a>
-    <div class="topbar-actions">
-      <span class="system-state"><span class="live-dot" aria-hidden="true"></span><span id="system-label">Connecting</span></span>
-      <button class="button button-quiet" id="settings-open" type="button">Settings</button>
+  <header class="app-header">
+    <div class="header-left">
+      <a class="brand" href="/" aria-label="Dockge Updater home">
+        <svg class="brand-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+          <path d="M12 12v9" />
+          <path d="m8 17 4-4 4 4" />
+        </svg>
+        <span class="brand-title">Dockge Updater</span>
+      </a>
+      <span class="system-pill" id="system-pill">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="system-label">Connecting</span>
+      </span>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-primary" id="check-all" type="button" title="Check registry for container image updates">
+        <span class="btn-icon" id="check-icon" aria-hidden="true">↻</span>
+        <span>Check now</span>
+      </button>
+
+      <button class="btn btn-ghost btn-icon-only" id="theme-toggle" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">
+        <svg class="theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+
+      <button class="btn btn-ghost" id="settings-open" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Settings</span>
+      </button>
     </div>
   </header>
 
-  <main class="page-shell">
-    <section class="page-intro" aria-labelledby="page-title">
-      <h1 id="page-title">Stack updates</h1>
-      <button class="button button-primary" id="check-all" type="button">
-        <span class="button-icon" aria-hidden="true">↻</span>
-        <span>Check now</span>
-      </button>
-    </section>
-
-    <section class="metrics" aria-label="Update overview">
-      <article class="metric metric-signal">
-        <span class="metric-label">Updates</span>
-        <strong id="metric-updates">—</strong>
-        <span class="metric-note" id="metric-update-note">Waiting for first check</span>
-      </article>
-      <article class="metric">
-        <span class="metric-label">Stacks</span>
-        <strong id="metric-stacks">—</strong>
-        <span class="metric-note">Compose projects found</span>
-      </article>
-      <article class="metric">
-        <span class="metric-label">Last check</span>
-        <strong class="metric-time" id="metric-last">Never</strong>
-        <span class="metric-note" id="metric-last-exact">No check recorded</span>
-      </article>
-      <article class="metric">
-        <span class="metric-label">Next check</span>
-        <strong class="metric-time" id="metric-next">—</strong>
-        <span class="metric-note" id="metric-next-exact">Daily schedule</span>
-      </article>
-    </section>
-
-    <section class="job-strip" id="job-strip" aria-live="polite" hidden>
+  <!-- Active background job notification banner -->
+  <aside class="job-banner" id="job-strip" aria-live="polite" hidden>
+    <div class="job-indicator">
       <span class="spinner" aria-hidden="true"></span>
-      <span id="job-message">Checking images</span>
-      <span class="job-elapsed" id="job-elapsed"></span>
+      <span class="job-text" id="job-message">Checking images…</span>
+    </div>
+    <span class="job-timer" id="job-elapsed">0s</span>
+  </aside>
+
+  <!-- Dashboard Overview / Filter Toolbar -->
+  <section class="dashboard-toolbar">
+    <div class="toolbar-filters" role="tablist" aria-label="Filter stacks">
+      <button class="filter-tab is-active" id="filter-all" data-filter="all" type="button">
+        <span>All Stacks</span>
+        <span class="tab-badge" id="metric-stacks">0</span>
+      </button>
+      <button class="filter-tab" id="filter-updates" data-filter="updates" type="button">
+        <span class="tab-dot dot-warning" aria-hidden="true"></span>
+        <span>Updates</span>
+        <span class="tab-badge badge-warning" id="metric-updates">0</span>
+      </button>
+      <button class="filter-tab" id="filter-current" data-filter="current" type="button">
+        <span class="tab-dot dot-success" aria-hidden="true"></span>
+        <span>Up to date</span>
+        <span class="tab-badge" id="metric-current">0</span>
+      </button>
+      <button class="filter-tab" id="filter-errors" data-filter="error" type="button" hidden>
+        <span class="tab-dot dot-danger" aria-hidden="true"></span>
+        <span>Errors</span>
+        <span class="tab-badge badge-danger" id="metric-errors">0</span>
+      </button>
+    </div>
+
+    <div class="toolbar-search">
+      <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="search" id="stack-search" placeholder="Search stacks or images…" autocomplete="off" spellcheck="false" aria-label="Search stacks or images">
+      <button class="search-clear" id="search-clear" type="button" aria-label="Clear search" hidden>×</button>
+    </div>
+
+    <div class="toolbar-meta">
+      <div class="meta-item" title="Last background or manual check">
+        <span class="meta-label">Checked:</span>
+        <span class="meta-value" id="metric-last">Never</span>
+        <span class="sr-only" id="metric-last-exact"></span>
+      </div>
+      <span class="meta-sep" aria-hidden="true">·</span>
+      <div class="meta-item" title="Next scheduled image check">
+        <span class="meta-label">Next:</span>
+        <span class="meta-value" id="metric-next">—</span>
+        <span class="meta-note" id="metric-next-exact"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Operator Workbench -->
+  <main class="workbench-layout">
+    <!-- Stack Inventory Panel -->
+    <section class="stacks-panel" aria-labelledby="stacks-header-title">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <h2 id="stacks-header-title">Compose Stacks</h2>
+          <span class="panel-sub" id="stack-summary">Reading stacks directory…</span>
+        </div>
+        <span class="sr-only" id="metric-update-note"></span>
+      </div>
+
+      <div class="stack-list" id="stack-list" aria-live="polite">
+        <div class="loading-state">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Loading stack inventory…</span>
+        </div>
+      </div>
     </section>
 
-    <div class="workbench">
-      <section class="stack-panel" aria-labelledby="stack-heading">
-        <div class="section-heading">
-          <div>
-            <h2 id="stack-heading">Dockge stacks</h2>
-          </div>
-          <p id="stack-summary">Reading your stacks directory…</p>
+    <!-- Activity Log Sidebar -->
+    <aside class="activity-panel" aria-labelledby="activity-header-title">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <h2 id="activity-header-title">Activity Log</h2>
         </div>
-        <div class="stack-list" id="stack-list" aria-live="polite">
-          <div class="loading-block">
-            <span class="spinner" aria-hidden="true"></span>
-            <p>Loading stack inventory</p>
-          </div>
-        </div>
-      </section>
-
-      <aside class="activity-panel" aria-labelledby="activity-heading">
-        <div class="activity-heading">
-          <div>
-            <h2 id="activity-heading">Recent activity</h2>
-          </div>
-          <span class="activity-count" id="activity-count">0</span>
-        </div>
-        <ol class="activity-list" id="activity-list">
-          <li class="activity-empty">No activity yet. Your first image check will appear here.</li>
-        </ol>
-      </aside>
-    </div>
+        <span class="badge-count" id="activity-count">0</span>
+      </div>
+      <ol class="activity-feed" id="activity-list">
+        <li class="activity-empty">No activity yet. Image checks and updates will appear here.</li>
+      </ol>
+    </aside>
   </main>
 
-  <footer class="footer">
-    <span>Dockge Updater</span>
-    <span id="footer-version">Single binary · local state</span>
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <span>Dockge Updater</span>
+      <span class="footer-dot">·</span>
+      <span id="footer-version">Single binary</span>
+    </div>
+    <div class="footer-right">
+      <span>Self-hosted Dockge companion</span>
+    </div>
   </footer>
 
+  <!-- Schedule & Auto-Update Settings Dialog -->
   <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
     <form class="settings-form" id="settings-form" method="dialog">
-      <div class="dialog-heading">
-        <div>
-          <h2 id="settings-title">Update schedule</h2>
-        </div>
-        <button class="icon-button" id="settings-close" type="button" aria-label="Close settings">×</button>
+      <div class="dialog-header">
+        <h2 id="settings-title">Updater Settings</h2>
+        <button class="btn-close" id="settings-close" type="button" aria-label="Close settings">×</button>
       </div>
 
-      <div class="form-section">
-        <div class="field-copy">
-          <label for="check-time">Daily image check</label>
-          <p>Images are pulled for comparison, but containers are not restarted.</p>
+      <div class="dialog-body">
+        <div class="setting-group">
+          <div class="setting-info">
+            <label for="check-time">Daily Image Check Time</label>
+            <p>Pulls latest image digests to check for updates without restarting containers.</p>
+          </div>
+          <div class="setting-control">
+            <input id="check-time" name="checkTime" type="time" required>
+          </div>
         </div>
-        <input id="check-time" name="checkTime" type="time" required>
+
+        <div class="setting-group">
+          <div class="setting-info">
+            <label>Automatic Updates</label>
+            <p>Choose whether to automatically apply updates via Docker Compose.</p>
+          </div>
+          <div class="setting-control">
+            <div class="segmented-control" role="radiogroup">
+              <label><input type="radio" name="autoUpdatePolicy" value="off"><span>Off (Manual)</span></label>
+              <label><input type="radio" name="autoUpdatePolicy" value="daily"><span>Daily</span></label>
+              <label><input type="radio" name="autoUpdatePolicy" value="weekly"><span>Weekly</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group schedule-fields" id="schedule-fields">
+          <div class="setting-info">
+            <label for="update-time">Update Maintenance Window</label>
+            <p>Time when automatic container recreation will occur.</p>
+          </div>
+          <div class="setting-control schedule-inputs">
+            <select id="update-weekday" name="updateWeekday" aria-label="Update weekday">
+              <option>Monday</option>
+              <option>Tuesday</option>
+              <option>Wednesday</option>
+              <option>Thursday</option>
+              <option>Friday</option>
+              <option>Saturday</option>
+              <option>Sunday</option>
+            </select>
+            <input id="update-time" name="updateTime" type="time" required>
+          </div>
+        </div>
+
+        <div class="dialog-notice">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p>Updates run <code>docker compose up -d</code> to recreate affected services. Ensure stateful volumes are backed up.</p>
+        </div>
       </div>
 
-      <fieldset class="policy-fieldset">
-        <legend>Automatic updates</legend>
-        <p>Choose when available images should be applied with Docker Compose.</p>
-        <div class="segmented-control">
-          <label><input type="radio" name="autoUpdatePolicy" value="off"><span>Off</span></label>
-          <label><input type="radio" name="autoUpdatePolicy" value="daily"><span>Daily</span></label>
-          <label><input type="radio" name="autoUpdatePolicy" value="weekly"><span>Weekly</span></label>
-        </div>
-      </fieldset>
-
-      <div class="form-section schedule-fields" id="schedule-fields">
-        <div class="field-copy">
-          <label for="update-time">Update window</label>
-          <p>The server timezone controls this clock.</p>
-        </div>
-        <div class="schedule-inputs">
-          <select id="update-weekday" name="updateWeekday" aria-label="Update weekday">
-            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-            <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
-          </select>
-          <input id="update-time" name="updateTime" type="time" required>
-        </div>
-      </div>
-
-      <div class="notice">
-        <span class="notice-mark" aria-hidden="true">i</span>
-        <p>Automatic updates recreate affected containers using <code>docker compose up -d</code>. Keep backups for stateful services.</p>
-      </div>
-
-      <div class="dialog-actions">
-        <button class="button button-quiet" id="settings-cancel" type="button">Cancel</button>
-        <button class="button button-primary" id="settings-save" type="submit">Save schedule</button>
+      <div class="dialog-footer">
+        <button class="btn btn-ghost" id="settings-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="settings-save" type="submit">Save Changes</button>
       </div>
     </form>
   </dialog>
 
+  <!-- Status Toast -->
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
+

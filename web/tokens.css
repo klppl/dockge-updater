@@ -1,63 +1,136 @@
-/* Dockge Updater · Cobalt design tokens */
+/* Dockge Updater · Design tokens */
 :root {
-  --color-paper: oklch(98.5% 0.004 250);
-  --color-surface: oklch(99.2% 0.003 250);
-  --color-surface-muted: oklch(95% 0.008 250);
-  --color-ink: oklch(24% 0.02 258);
-  --color-ink-soft: oklch(42% 0.018 257);
-  --color-ink-faint: oklch(44% 0.014 255);
-  --color-line: oklch(88% 0.01 250);
-  --color-line-strong: oklch(60% 0.014 252);
-  --color-accent: oklch(56% 0.2 256);
-  --color-accent-hover: oklch(48% 0.2 256);
-  --color-accent-soft: oklch(94% 0.03 256);
-  --color-accent-ink: oklch(98.5% 0.004 250);
-  --color-focus: oklch(24% 0.02 258);
-  --color-success: oklch(50% 0.13 160);
-  --color-success-soft: oklch(94% 0.035 160);
-  --color-warning: oklch(50% 0.14 55);
-  --color-warning-soft: oklch(95% 0.04 75);
-  --color-danger: oklch(50% 0.19 25);
-  --color-danger-soft: oklch(95% 0.035 25);
-  --color-shadow: oklch(24% 0.02 258 / 0.12);
-  --color-backdrop: oklch(18% 0.02 258 / 0.42);
-  --color-transparent: transparent;
+  /* Common tokens */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --font-display: "Space Grotesk", "Arial Nova", sans-serif;
-  --font-body: "Inter", "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", monospace;
-
-  --text-xs: 0.6875rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-md: 1.25rem;
-  --text-lg: 1.5625rem;
-  --text-xl: 1.953rem;
-  --text-2xl: 2.441rem;
-  --text-display: clamp(2.25rem, 6vw, 4.6rem);
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-wide: 2rem;
-  --space-section: 3rem;
-  --space-display: 4.5rem;
-  --space-hero-end: 6rem;
+  --space-xs: 0.375rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.25rem;
+  --space-2xl: 1.5rem;
 
-  --radius-small: 6px;
-  --radius-medium: 10px;
-  --radius-large: 16px;
-  --rule-thin: 1px;
-  --dur-micro: 120ms;
-  --dur-short: 180ms;
-  --dur-long: 420ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --shadow-dialog: 0 24px 70px var(--color-shadow);
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --dur-fast: 120ms;
+  --dur-normal: 200ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-sticky: 50;
   --z-modal: 400;
   --z-toast: 500;
+}
+
+/* Dark theme (default for homelab / Dockge aesthetic) */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page: #0d1117;
+  --bg-subtle: #131821;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c222b;
+  --bg-surface: #21262d;
+  --bg-surface-hover: #29303a;
+  --bg-input: #0d1117;
+
+  --border-muted: #21262d;
+  --border-default: #30363d;
+  --border-strong: #484f58;
+
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --text-faint: #484f58;
+
+  --accent-primary: #1f6feb;
+  --accent-hover: #388bfd;
+  --accent-subtle: rgba(56, 139, 253, 0.12);
+  --accent-text: #58a6ff;
+
+  --success-primary: #238636;
+  --success-hover: #2ea043;
+  --success-subtle: rgba(46, 160, 67, 0.15);
+  --success-text: #3fb950;
+  --success-border: rgba(46, 160, 67, 0.3);
+
+  --warning-primary: #9e6a03;
+  --warning-hover: #bb8009;
+  --warning-subtle: rgba(210, 153, 34, 0.15);
+  --warning-text: #d29922;
+  --warning-border: rgba(210, 153, 34, 0.35);
+
+  --danger-primary: #da3633;
+  --danger-hover: #f85149;
+  --danger-subtle: rgba(248, 81, 73, 0.15);
+  --danger-text: #f85149;
+  --danger-border: rgba(248, 81, 73, 0.3);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.45);
+  --backdrop: rgba(1, 4, 9, 0.7);
+}
+
+/* Light theme support */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-page: #f6f8fa;
+  --bg-subtle: #eaeef2;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f6f8fa;
+  --bg-surface: #f0f2f5;
+  --bg-surface-hover: #e4e7eb;
+  --bg-input: #ffffff;
+
+  --border-muted: #e1e4e8;
+  --border-default: #d0d7de;
+  --border-strong: #afb8c1;
+
+  --text-primary: #1f2328;
+  --text-secondary: #57606a;
+  --text-muted: #6e7781;
+  --text-faint: #8c959f;
+
+  --accent-primary: #0969da;
+  --accent-hover: #085cc0;
+  --accent-subtle: rgba(9, 105, 218, 0.08);
+  --accent-text: #0969da;
+
+  --success-primary: #1a7f37;
+  --success-hover: #156d2e;
+  --success-subtle: rgba(31, 136, 61, 0.1);
+  --success-text: #1a7f37;
+  --success-border: rgba(31, 136, 61, 0.25);
+
+  --warning-primary: #9a6700;
+  --warning-hover: #825600;
+  --warning-subtle: rgba(154, 103, 0, 0.1);
+  --warning-text: #9a6700;
+  --warning-border: rgba(154, 103, 0, 0.25);
+
+  --danger-primary: #cf222e;
+  --danger-hover: #b61e28;
+  --danger-subtle: rgba(207, 34, 46, 0.1);
+  --danger-text: #cf222e;
+  --danger-border: rgba(207, 34, 46, 0.25);
+
+  --shadow-sm: 0 1px 2px rgba(31, 35, 40, 0.04);
+  --shadow-md: 0 3px 6px rgba(31, 35, 40, 0.08);
+  --shadow-lg: 0 8px 24px rgba(31, 35, 40, 0.12);
+  --backdrop: rgba(31, 35, 40, 0.4);
 }

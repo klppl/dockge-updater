@@ -46,4 +46,12 @@ func TestServerServesDashboardAndSettingsAPI(t *testing.T) {
 	if status.Code != http.StatusOK || !strings.Contains(status.Body.String(), `"version":"test"`) {
 		t.Fatalf("status response: status=%d body=%q", status.Code, status.Body.String())
 	}
+
+	for _, asset := range []string{"/tokens.css", "/app.css", "/app.js"} {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, asset, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected asset %s to return 200 OK, got %d", asset, rec.Code)
+		}
+	}
 }
