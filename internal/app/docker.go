@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 var composeFileNames = []string{"compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"}
@@ -39,6 +40,7 @@ func (ExecRunner) RunWithInput(ctx context.Context, directory, input, name strin
 func runCommand(ctx context.Context, directory, input, name string, args ...string) ([]byte, error) {
 	command := exec.CommandContext(ctx, name, args...)
 	command.Dir = directory
+	command.Env = append(os.Environ(), "CI=1", "COMPOSE_INTERACTIVE_NO_CLI=1", "DOCKER_CLI_HINTS=false")
 	if input != "" {
 		command.Stdin = strings.NewReader(input)
 	}
@@ -90,12 +92,12 @@ func (d *Docker) Login(ctx context.Context, registry, username, token string) er
 func DiscoverStacks(root string) ([]StackState, error) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
-		return nil, fmt.Errorf("read stacks directory %q: %w", root, err)
+		return nil, fmt.Errorf("read stacks directory: %w", err)
 	}
 
-	stacks := make([]StackState, 0)
+	stacks := make([]StackState, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+		if !entry.IsDir() {
 			continue
 		}
 		directory := filepath.Join(root, entry.Name())
@@ -148,11 +150,22 @@ type dockerImageInspect struct {
 	} `json:"Config"`
 }
 
-func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, error) {
+func (d *Docker) CheckStack(ctx context.Context, stack StackState, onProgress ...func(string)) (StackState, error) {
+	var progress func(string)
+	if len(onProgress) > 0 && onProgress[0] != nil {
+		progress = onProgress[0]
+	} else {
+		progress = func(string) {}
+	}
+
 	stack.Status = "checking"
 	stack.Error = ""
 	directory := filepath.Dir(stack.ComposeFile)
-	configOutput, err := d.runner.Run(ctx, directory, "docker", "compose", "-f", stack.ComposeFile, "config", "--format", "json")
+
+	progress(fmt.Sprintf("%s: reading compose configuration", stack.Name))
+	configCtx, cancelConfig := context.WithTimeout(ctx, 45*time.Second)
+	defer cancelConfig()
+	configOutput, err := d.runner.Run(configCtx, directory, "docker", "compose", "-f", stack.ComposeFile, "config", "--format", "json")
 	if err != nil {
 		return stack, fmt.Errorf("read compose configuration: %w", err)
 	}
@@ -174,14 +187,28 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 		return stack, nil
 	}
 
-	pullArgs := []string{"compose", "-f", stack.ComposeFile, "pull", "--quiet"}
-	pullArgs = append(pullArgs, serviceNames...)
-	if _, err := d.runner.Run(ctx, directory, "docker", pullArgs...); err != nil {
-		return stack, fmt.Errorf("pull image metadata: %w", err)
+	pullErrors := make(map[string]error)
+	for sIdx, name := range serviceNames {
+		image := config.Services[name].Image
+		if len(serviceNames) > 1 {
+			progress(fmt.Sprintf("%s (%d/%d): pulling %s", stack.Name, sIdx+1, len(serviceNames), image))
+		} else {
+			progress(fmt.Sprintf("%s: pulling %s", stack.Name, image))
+		}
+
+		pullCtx, cancelPull := context.WithTimeout(ctx, 90*time.Second)
+		pullArgs := []string{"compose", "-f", stack.ComposeFile, "pull", "--quiet", name}
+		if _, err := d.runner.Run(pullCtx, directory, "docker", pullArgs...); err != nil {
+			pullErrors[name] = err
+		}
+		cancelPull()
 	}
 
+	progress(fmt.Sprintf("%s: inspecting containers", stack.Name))
+	psCtx, cancelPs := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelPs()
 	containers := make(map[string]composeContainer)
-	psOutput, err := d.runner.Run(ctx, directory, "docker", "compose", "-f", stack.ComposeFile, "ps", "--all", "--format", "json")
+	psOutput, err := d.runner.Run(psCtx, directory, "docker", "compose", "-f", stack.ComposeFile, "ps", "--all", "--format", "json")
 	if err != nil {
 		return stack, fmt.Errorf("list compose containers: %w", err)
 	}
@@ -193,6 +220,7 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 	updates := 0
 	for _, name := range serviceNames {
 		image := config.Services[name].Image
+		progress(fmt.Sprintf("%s: inspecting %s", stack.Name, image))
 		service := ServiceState{Name: name, Image: image}
 		if container, ok := containers[name]; ok {
 			service.ContainerID = shortID(container.ID)
@@ -204,11 +232,19 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 		}
 		target, inspectErr := d.runner.Run(ctx, directory, "docker", "image", "inspect", image)
 		if inspectErr != nil {
-			return stack, fmt.Errorf("inspect image %s: %w", image, inspectErr)
+			if pErr, ok := pullErrors[name]; ok {
+				service.Error = fmt.Sprintf("pull failed: %v", pErr)
+			} else {
+				service.Error = fmt.Sprintf("inspect image: %v", inspectErr)
+			}
+			services = append(services, service)
+			continue
 		}
 		inspected, inspectErr := parseImageInspect(target)
 		if inspectErr != nil {
-			return stack, fmt.Errorf("decode image metadata for %s: %w", image, inspectErr)
+			service.Error = fmt.Sprintf("decode image metadata: %v", inspectErr)
+			services = append(services, service)
+			continue
 		}
 		service.TargetImageID = inspected.ID
 		service.SourceURL, service.ChangelogURL, service.ImageVersion, service.ImageRevision = imageMetadata(image, inspected.Config.Labels)
@@ -221,7 +257,14 @@ func (d *Docker) CheckStack(ctx context.Context, stack StackState) (StackState, 
 
 	stack.Services = services
 	stack.UpdatesAvailable = updates
-	if updates > 0 {
+	if len(pullErrors) > 0 {
+		stack.Status = "error"
+		var errMsgs []string
+		for svc, pErr := range pullErrors {
+			errMsgs = append(errMsgs, fmt.Sprintf("%s: %v", svc, pErr))
+		}
+		stack.Error = fmt.Sprintf("failed to pull image for %s", strings.Join(errMsgs, "; "))
+	} else if updates > 0 {
 		stack.Status = "update_available"
 	} else {
 		stack.Status = "up_to_date"

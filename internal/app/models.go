@@ -32,6 +32,7 @@ type ServiceState struct {
 	CurrentImageID  string `json:"currentImageId,omitempty"`
 	TargetImageID   string `json:"targetImageId,omitempty"`
 	UpdateAvailable bool   `json:"updateAvailable"`
+	Error           string `json:"error,omitempty"`
 }
 
 type StackState struct {

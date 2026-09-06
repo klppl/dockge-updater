@@ -130,10 +130,17 @@ function renderStack(stack) {
   // Status Indicator
   const [statusLabel, badgeClass] = statusInfo(stack);
   const badge = element('span', `status-badge ${badgeClass}`);
-  const dot = element('span', 'badge-dot', '');
-  dot.setAttribute('aria-hidden', 'true');
+  if (stack.status === 'checking') {
+    const spinner = element('span', 'spinner-sm');
+    spinner.setAttribute('aria-hidden', 'true');
+    badge.append(spinner);
+  } else {
+    const dot = element('span', 'badge-dot', '');
+    dot.setAttribute('aria-hidden', 'true');
+    badge.append(dot);
+  }
   const labelText = element('span', 'badge-text', statusLabel);
-  badge.append(dot, labelText);
+  badge.append(labelText);
 
   const titleGroup = element('div', 'stack-title-group');
   const name = element('h3', 'stack-name', stack.name);
@@ -442,13 +449,16 @@ function render(data) {
   ui.checkAll.classList.toggle('is-loading', isRunning);
 
   if (isRunning) {
-    ui.systemLabel.textContent = data.job.kind === 'update' ? 'Updating stack…' : 'Checking images…';
+    const jobText = data.job.message || (data.job.kind === 'update' ? 'Updating stack…' : 'Checking images…');
+    ui.systemLabel.textContent = jobText;
+    ui.systemPill.title = jobText;
     ui.systemPill.className = 'system-pill pill-working';
-    ui.jobMessage.textContent = data.job.message || 'Processing Docker task…';
+    ui.jobMessage.textContent = jobText;
     const elapsed = Math.max(0, Math.round((Date.now() - new Date(data.job.startedAt).getTime()) / 1000));
     ui.jobElapsed.textContent = `${elapsed}s`;
   } else {
     ui.systemLabel.textContent = 'System ready';
+    ui.systemPill.title = 'System ready';
     ui.systemPill.className = 'system-pill pill-ready';
   }
 

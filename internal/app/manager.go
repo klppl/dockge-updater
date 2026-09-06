@@ -168,19 +168,44 @@ func (m *Manager) checkAll(ctx context.Context) bool {
 	m.mu.RUnlock()
 	sort.Slice(stacks, func(i, j int) bool { return stacks[i].Name < stacks[j].Name })
 
+	m.logger.Info("starting image check for all stacks", "total_stacks", len(stacks))
+
 	for index, stack := range stacks {
 		if ctx.Err() != nil {
 			m.recordGlobalError("Image check stopped", ctx.Err())
 			return false
 		}
-		m.setJobMessage(fmt.Sprintf("Checking %s (%d of %d)", stack.Name, index+1, len(stacks)))
+
+		progressPrefix := fmt.Sprintf("[%d/%d] %s", index+1, len(stacks), stack.Name)
+		m.setJobMessage(progressPrefix)
+		m.logger.Info("checking stack", "stack", stack.Name, "index", index+1, "total", len(stacks))
+
+		// Mark this stack as checking in memory so UI reflects it immediately
+		m.mu.Lock()
+		if s, ok := m.state.Stacks[stack.ID]; ok {
+			s.Status = "checking"
+			m.state.Stacks[stack.ID] = s
+		}
+		m.mu.Unlock()
+
+		stackStartTime := time.Now()
 		previousUpdates := stack.UpdatesAvailable
-		checked, err := m.docker.CheckStack(ctx, stack)
+
+		checked, err := m.docker.CheckStack(ctx, stack, func(detail string) {
+			liveMsg := fmt.Sprintf("[%d/%d] %s", index+1, len(stacks), detail)
+			m.setJobMessage(liveMsg)
+			m.logger.Debug("image check progress", "message", liveMsg)
+		})
+
 		checked.LastChecked = time.Now()
 		if err != nil {
 			checked.Status = "error"
 			checked.Error = err.Error()
+			m.logger.Warn("stack check completed with error", "stack", stack.Name, "error", err, "duration", time.Since(stackStartTime))
+		} else {
+			m.logger.Info("stack check completed", "stack", stack.Name, "status", checked.Status, "updates", checked.UpdatesAvailable, "duration", time.Since(stackStartTime))
 		}
+
 		m.mu.Lock()
 		m.state.Stacks[stack.ID] = checked
 		if err != nil {
@@ -205,6 +230,7 @@ func (m *Manager) checkAll(ctx context.Context) bool {
 	m.addEventLocked(Event{Type: "check", Title: "Image check complete", Detail: detail})
 	_ = m.saveLocked()
 	m.mu.Unlock()
+	m.logger.Info("completed image check for all stacks", "updates_available", available)
 	return true
 }
 
