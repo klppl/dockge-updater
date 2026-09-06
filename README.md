@@ -1,145 +1,79 @@
 # Dockge Updater
 
-A small, single-user update dashboard for Docker Compose stacks managed by Dockge. It runs as one Go process, stores its state in one JSON file, and delegates image and container operations to the Docker Compose CLI.
+A lightweight update dashboard for Docker Compose stacks managed by [Dockge](https://github.com/louislam/dockge). It checks for newer container images and can apply updates manually or on a schedule.
 
-## What it does
+## Features
 
-- Discovers Dockge stacks from their Compose files.
-- Checks every day at a configurable local time.
-- Pulls each image, then compares the deployed container image ID with the pulled image ID.
-- Shows updates, service details, failures, and recent activity in a responsive web dashboard.
-- Applies a stack update manually with `docker compose up -d --remove-orphans`.
-- Optionally applies available updates every night or on one selected weekday.
-- Serializes work so two Docker operations cannot run at the same time.
+- Discovers stacks from the Dockge stacks directory
+- Checks for newer container images on a daily schedule
+- Supports manual, nightly, and weekly updates
+- Shows service status and recent activity in a web interface
+- Runs as a single Go binary with JSON file storage
 
-Automatic updates are **off by default**. The default check time is 03:00.
-On a fresh installation, the first check starts when the service starts. A restart also catches up when the latest successful check is at least 25 hours old.
+Automatic updates are disabled by default.
 
-## Deploy next to Dockge
+## Deployment
 
-The included Compose file assumes Dockge stores stacks at `/opt/stacks`. From this directory:
+Copy `compose.yaml` to the server and create a `.env` file:
+
+```dotenv
+UPDATER_IMAGE=ghcr.io/klppl/dockge-updater:latest
+UPDATER_PORT=8088
+DOCKGE_STACKS_DIR=/opt/stacks
+TZ=UTC
+```
+
+Start the service:
+
+```sh
+docker compose pull
+docker compose up -d --no-build
+```
+
+The dashboard is available at `http://127.0.0.1:8088` by default. If the container package is private, authenticate to `ghcr.io` before pulling it.
+
+To build the image locally instead:
 
 ```sh
 docker compose up -d --build
 ```
 
-Open `http://127.0.0.1:8088`, or point your Cloudflare Tunnel origin at that address. The port only binds to loopback by default.
+## Container image
 
-If Dockge uses a different host directory, provide the same absolute path on both sides of the mount:
-
-```sh
-DOCKGE_STACKS_DIR=/srv/dockge/stacks docker compose up -d --build
-```
-
-To change the host port or timezone, add a `.env` file beside `compose.yaml`:
-
-```dotenv
-UPDATER_PORT=8088
-TZ=Europe/Stockholm
-DOCKGE_STACKS_DIR=/opt/stacks
-```
-
-The timezone controls all scheduled checks and updates. State is kept in `./data/state.json`.
-
-## Package with GitHub Actions
-
-The manual workflow at `.github/workflows/docker.yml` builds only for `linux/amd64` and pushes the result to GitHub Container Registry. It deliberately does not install QEMU or build extra architectures.
-
-After pushing this repository to GitHub:
-
-1. Open **Actions → Package Docker image**.
-2. Select **Run workflow**.
-3. Wait for the `Build linux/amd64` job to finish.
-
-The workflow publishes two tags:
+The `Package Docker image` workflow can be run manually from the GitHub Actions page. It publishes these tags to GitHub Container Registry:
 
 ```text
-ghcr.io/<owner>/<repository>:latest
-ghcr.io/<owner>/<repository>:sha-<commit>
+ghcr.io/klppl/dockge-updater:latest
+ghcr.io/klppl/dockge-updater:sha-<commit>
 ```
-
-The image path is converted to lowercase automatically. BuildKit’s GitHub Actions cache is reused on later runs.
-
-On the VPS, set the published image in `.env`:
-
-```dotenv
-UPDATER_IMAGE=ghcr.io/<owner>/<repository>:latest
-UPDATER_PORT=8088
-TZ=Europe/Stockholm
-DOCKGE_STACKS_DIR=/opt/stacks
-```
-
-Then pull and replace the container without building locally:
-
-```sh
-docker compose pull dockge-updater
-docker compose up -d --no-build dockge-updater
-```
-
-For a private GHCR package, authenticate once on the VPS with a GitHub personal access token that has `read:packages`:
-
-```sh
-echo "$GHCR_TOKEN" | docker login ghcr.io --username <github-user> --password-stdin
-```
-
-You can make the package public from its package settings if you prefer pulls without registry authentication.
-
-## How update detection works
-
-For each stack, the service runs the equivalent of:
-
-1. `docker compose config --format json` to read services and image references.
-2. `docker compose pull` for services that use an image.
-3. `docker compose ps` and `docker inspect` to compare each deployed image ID with the freshly pulled image ID.
-
-Checks do not restart containers. They **do download newer image layers**, which uses registry bandwidth and disk space. Services that only have a `build:` section and no `image:` reference are skipped.
-
-When an update is approved, Compose reconciles the whole stack. Relative paths continue to work because the stacks directory is mounted into the updater at the same absolute path it has on the host.
-
-## Private registries
-
-Public images work without extra configuration. If the host uses a private registry, make Docker credentials available inside the updater. For example, add a read-only mount to the service:
-
-```yaml
-volumes:
-  - /root/.docker/config.json:/root/.docker/config.json:ro
-```
-
-Use the credential path for the host account that already pulls those images.
-
-## Security boundary
-
-There is intentionally no application login because the intended deployment sits behind Cloudflare Zero Trust. Keep it private: the Docker socket gives this container administrative control of Docker and is effectively root-level access to the VPS. Do not expose the dashboard directly to the public internet.
 
 ## Configuration
 
-Runtime environment variables:
-
-| Variable | Default | Purpose |
+| Variable | Default | Description |
 | --- | --- | --- |
-| `LISTEN_ADDR` | `:8080` | HTTP bind address inside the container |
-| `STACKS_DIR` | `/opt/stacks` | Directory containing one folder per Dockge stack |
-| `DATA_DIR` | `/data` | Directory for the JSON state file |
-| `TZ` | system local time | Timezone used by the scheduler |
-| `LOG_LEVEL` | `info` | Set to `debug` for API request logs |
+| `LISTEN_ADDR` | `:8080` | Address used inside the container |
+| `STACKS_DIR` | `/opt/stacks` | Directory containing Dockge stacks |
+| `DATA_DIR` | `/data` | Directory used for persistent state |
+| `TZ` | System timezone | Timezone used by the scheduler |
+| `LOG_LEVEL` | `info` | Set to `debug` for request logging |
 
-Schedule settings are changed from the web interface.
+Check and update schedules are configured from the web interface. State is stored in `./data/state.json` when using the included Compose file.
 
-## Local development
+## How it works
 
-Go 1.23 or newer is sufficient for the application itself. Docker with the Compose v2 plugin must be available when starting the server.
+Checks pull the images referenced by each Compose stack and compare them with the images used by its running containers. Checks do not restart containers. Applying an update runs Docker Compose for the complete stack.
+
+Services without an `image` reference are skipped. Image pruning is not performed automatically.
+
+## Security
+
+Dockge Updater has no built-in authentication. Keep it behind an authenticated reverse proxy and do not expose it directly to the internet. Access to the Docker socket gives the container administrative control over Docker on the host.
+
+## Development
+
+Requires Go 1.23 or newer and Docker Compose v2.
 
 ```sh
 go test ./...
 go run ./cmd/dockge-updater
 ```
-
-For local Dockge data, override `STACKS_DIR` and `DATA_DIR`.
-
-## Operational notes
-
-- Only one check or update job runs at once.
-- Failed stacks do not stop the remaining stacks from being checked.
-- The activity log keeps the latest 80 events.
-- Old image layers are not deleted automatically. Pruning can remove rollback options, so keep that as a separate, deliberate host maintenance task.
-- Stateful applications should have tested backups before automatic updates are enabled.
