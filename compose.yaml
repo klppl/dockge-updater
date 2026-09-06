@@ -1,0 +1,20 @@
+services:
+  dockge-updater:
+    image: ${UPDATER_IMAGE:-dockge-updater:local}
+    build:
+      context: .
+      args:
+        VERSION: local
+    container_name: dockge-updater
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Stockholm}
+      STACKS_DIR: ${DOCKGE_STACKS_DIR:-/opt/stacks}
+      DATA_DIR: /data
+      LISTEN_ADDR: :8080
+    ports:
+      - "127.0.0.1:${UPDATER_PORT:-8088}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKGE_STACKS_DIR:-/opt/stacks}:${DOCKGE_STACKS_DIR:-/opt/stacks}:ro
+      - ./data:/data

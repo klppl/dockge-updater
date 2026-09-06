@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dockge Updater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@500;700&amp;family=Space+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Dockge Updater home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>Dockge Updater</span>
+    </a>
+    <div class="topbar-actions">
+      <span class="system-state"><span class="live-dot" aria-hidden="true"></span><span id="system-label">Connecting</span></span>
+      <button class="button button-quiet" id="settings-open" type="button">Settings</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="page-intro" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Your stacks, without the drift.</h1>
+      </div>
+      <div class="intro-copy">
+        <p>Compare every deployed container with the current image behind its Compose reference. Nothing restarts until you say so.</p>
+        <button class="button button-primary" id="check-all" type="button">
+          <span class="button-icon" aria-hidden="true">↻</span>
+          <span>Check now</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Update overview">
+      <article class="metric metric-signal">
+        <span class="metric-label">Updates</span>
+        <strong id="metric-updates">—</strong>
+        <span class="metric-note" id="metric-update-note">Waiting for first check</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Stacks</span>
+        <strong id="metric-stacks">—</strong>
+        <span class="metric-note">Compose projects found</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Last check</span>
+        <strong class="metric-time" id="metric-last">Never</strong>
+        <span class="metric-note" id="metric-last-exact">No check recorded</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Next check</span>
+        <strong class="metric-time" id="metric-next">—</strong>
+        <span class="metric-note" id="metric-next-exact">Daily schedule</span>
+      </article>
+    </section>
+
+    <section class="job-strip" id="job-strip" aria-live="polite" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="job-message">Checking images</span>
+      <span class="job-elapsed" id="job-elapsed"></span>
+    </section>
+
+    <div class="workbench">
+      <section class="stack-panel" aria-labelledby="stack-heading">
+        <div class="section-heading">
+          <div>
+            <h2 id="stack-heading">Dockge stacks</h2>
+          </div>
+          <p id="stack-summary">Reading your stacks directory…</p>
+        </div>
+        <div class="stack-list" id="stack-list" aria-live="polite">
+          <div class="loading-block">
+            <span class="spinner" aria-hidden="true"></span>
+            <p>Loading stack inventory</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="activity-panel" aria-labelledby="activity-heading">
+        <div class="activity-heading">
+          <div>
+            <h2 id="activity-heading">Recent activity</h2>
+          </div>
+          <span class="activity-count" id="activity-count">0</span>
+        </div>
+        <ol class="activity-list" id="activity-list">
+          <li class="activity-empty">No activity yet. Your first image check will appear here.</li>
+        </ol>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>Dockge Updater</span>
+    <span id="footer-version">Single binary · local state</span>
+  </footer>
+
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <form class="settings-form" id="settings-form" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <h2 id="settings-title">Update schedule</h2>
+        </div>
+        <button class="icon-button" id="settings-close" type="button" aria-label="Close settings">×</button>
+      </div>
+
+      <div class="form-section">
+        <div class="field-copy">
+          <label for="check-time">Daily image check</label>
+          <p>Images are pulled for comparison, but containers are not restarted.</p>
+        </div>
+        <input id="check-time" name="checkTime" type="time" required>
+      </div>
+
+      <fieldset class="policy-fieldset">
+        <legend>Automatic updates</legend>
+        <p>Choose when available images should be applied with Docker Compose.</p>
+        <div class="segmented-control">
+          <label><input type="radio" name="autoUpdatePolicy" value="off"><span>Off</span></label>
+          <label><input type="radio" name="autoUpdatePolicy" value="daily"><span>Daily</span></label>
+          <label><input type="radio" name="autoUpdatePolicy" value="weekly"><span>Weekly</span></label>
+        </div>
+      </fieldset>
+
+      <div class="form-section schedule-fields" id="schedule-fields">
+        <div class="field-copy">
+          <label for="update-time">Update window</label>
+          <p>The server timezone controls this clock.</p>
+        </div>
+        <div class="schedule-inputs">
+          <select id="update-weekday" name="updateWeekday" aria-label="Update weekday">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+          <input id="update-time" name="updateTime" type="time" required>
+        </div>
+      </div>
+
+      <div class="notice">
+        <span class="notice-mark" aria-hidden="true">i</span>
+        <p>Automatic updates recreate affected containers using <code>docker compose up -d</code>. Keep backups for stateful services.</p>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="button button-quiet" id="settings-cancel" type="button">Cancel</button>
+        <button class="button button-primary" id="settings-save" type="submit">Save schedule</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

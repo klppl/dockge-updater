@@ -1,0 +1,63 @@
+/* Dockge Updater · Cobalt design tokens */
+:root {
+  --color-paper: oklch(98.5% 0.004 250);
+  --color-surface: oklch(99.2% 0.003 250);
+  --color-surface-muted: oklch(95% 0.008 250);
+  --color-ink: oklch(24% 0.02 258);
+  --color-ink-soft: oklch(42% 0.018 257);
+  --color-ink-faint: oklch(44% 0.014 255);
+  --color-line: oklch(88% 0.01 250);
+  --color-line-strong: oklch(60% 0.014 252);
+  --color-accent: oklch(56% 0.2 256);
+  --color-accent-hover: oklch(48% 0.2 256);
+  --color-accent-soft: oklch(94% 0.03 256);
+  --color-accent-ink: oklch(98.5% 0.004 250);
+  --color-focus: oklch(24% 0.02 258);
+  --color-success: oklch(50% 0.13 160);
+  --color-success-soft: oklch(94% 0.035 160);
+  --color-warning: oklch(50% 0.14 55);
+  --color-warning-soft: oklch(95% 0.04 75);
+  --color-danger: oklch(50% 0.19 25);
+  --color-danger-soft: oklch(95% 0.035 25);
+  --color-shadow: oklch(24% 0.02 258 / 0.12);
+  --color-backdrop: oklch(18% 0.02 258 / 0.42);
+  --color-transparent: transparent;
+
+  --font-display: "Space Grotesk", "Arial Nova", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", monospace;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-display: clamp(2.25rem, 6vw, 4.6rem);
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-wide: 2rem;
+  --space-section: 3rem;
+  --space-display: 4.5rem;
+  --space-hero-end: 6rem;
+
+  --radius-small: 6px;
+  --radius-medium: 10px;
+  --radius-large: 16px;
+  --rule-thin: 1px;
+  --dur-micro: 120ms;
+  --dur-short: 180ms;
+  --dur-long: 420ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --shadow-dialog: 0 24px 70px var(--color-shadow);
+  --z-modal: 400;
+  --z-toast: 500;
+}
