@@ -30,6 +30,9 @@ func TestServerServesDashboardAndSettingsAPI(t *testing.T) {
 	if policy := dashboard.Header().Get("Content-Security-Policy"); !strings.Contains(policy, "default-src 'self'") {
 		t.Fatalf("expected content security policy, got %q", policy)
 	}
+	if cache := dashboard.Header().Get("Cache-Control"); !strings.Contains(cache, "no-cache") {
+		t.Fatalf("expected Cache-Control header, got %q", cache)
+	}
 
 	payload := []byte(`{"checkTime":"05:30","autoUpdatePolicy":"weekly","updateTime":"02:15","updateWeekday":"Saturday"}`)
 	settings := httptest.NewRecorder()
