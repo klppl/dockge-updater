@@ -1,5 +1,7 @@
 # Dockge Updater
 
+[![License: Lagom](https://img.shields.io/badge/license-lagom-9E2B25)](https://klppl.github.io/lagom-license/)
+
 A lightweight update dashboard for Docker Compose stacks managed by [Dockge](https://github.com/louislam/dockge). It checks for newer container images and can apply updates manually or on a schedule.
 
 ## Features
